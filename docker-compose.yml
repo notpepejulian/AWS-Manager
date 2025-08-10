@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   backend:
     image: node:${NODE_VERSION}-alpine
@@ -63,5 +61,6 @@ services:
       - ${NETWORK_NAME}
 
 networks:
-  ${NETWORK_NAME}:
+  aws-manager-net:
     driver: bridge
+    name: ${NETWORK_NAME}

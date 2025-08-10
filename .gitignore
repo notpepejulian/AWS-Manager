@@ -1,4 +1,8 @@
-# Archivos de entorno y variables de configuración
+# ========================================
+# ARCHIVOS DE ENTORNO Y CONFIGURACIÓN
+# ========================================
+
+# Archivos de entorno principales
 .env
 .env.*
 .env.local
@@ -32,7 +36,7 @@
 .env.template
 .env.dist
 
-# Archivos de configuración de entorno alternativos
+# Archivos de configuración alternativos
 .envrc
 .env.sh
 .env.bat
@@ -45,3 +49,150 @@
 .env.bak
 .env~
 .env.backup
+
+# ========================================
+# DEPENDENCIAS Y MÓDULOS
+# ========================================
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ========================================
+# DATOS DE DOCKER Y CONTENEDORES
+# ========================================
+
+# Datos persistentes de servicios
+n8n_data/
+postgres_data/
+redis_data/
+mongodb_data/
+
+# ========================================
+# ARCHIVOS DE CONSTRUCCIÓN Y DISTRIBUCIÓN
+# ========================================
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.vuepress/dist
+
+# ========================================
+# LOGS Y ARCHIVOS TEMPORALES
+# ========================================
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# ========================================
+# ARCHIVOS DEL SISTEMA
+# ========================================
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ========================================
+# EDITORES Y IDEs
+# ========================================
+
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# ========================================
+# ARCHIVOS DE AWS Y CREDENCIALES
+# ========================================
+
+# AWS credentials
+.aws/
+aws-credentials.json
+aws-config.json
+
+# AWS SAM
+.aws-sam/
+samconfig.toml
+
+# ========================================
+# ARCHIVOS DE DESARROLLO ESPECÍFICOS
+# ========================================
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# ========================================
+# ARCHIVOS DE TESTING
+# ========================================
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Jest
+.jest/
+
+# ========================================
+# ARCHIVOS DE MONITOREO Y DEBUGGING
+# ========================================
+
+# Debug files
+.debug/
+debug.log
+
+# Performance monitoring
+.perf/
