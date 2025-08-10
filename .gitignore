@@ -1,0 +1,47 @@
+# Archivos de entorno y variables de configuración
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+.env.qa
+
+# Archivos de configuración sensible y credenciales
+*.env
+*.secret
+*.key
+*.pem
+*.cert
+*.crt
+*.pfx
+*.p12
+*.jks
+*.keystore
+*.truststore
+
+# Variables de entorno específicas del sistema y usuario
+.env.*.local
+.env.*.user
+.env.*.personal
+
+# Archivos de entorno de ejemplo y plantillas
+.env.example
+.env.sample
+.env.template
+.env.dist
+
+# Archivos de configuración de entorno alternativos
+.envrc
+.env.sh
+.env.bat
+.env.cmd
+.env.ps1
+
+# Archivos temporales de entorno
+.env.tmp
+.env.swp
+.env.bak
+.env~
+.env.backup
