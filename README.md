@@ -11,6 +11,9 @@ La aplicación está compuesta por:
 - Orquestación de servicios mediante **Docker Compose**.
 - (Próximamente) Integración con **N8N** para flujos automatizados e IA.
 
+  <img width="2400" height="1152" alt="image" src="https://github.com/user-attachments/assets/e4442943-d129-4b85-8ccb-ce00e64dc1d0" />
+
+
 ## 2. Clonar el repositorio y herramientas necesarias
 
 Para comenzar a usar el proyecto, simplemente clona el repositorio:
