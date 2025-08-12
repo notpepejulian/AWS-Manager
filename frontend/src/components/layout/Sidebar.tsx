@@ -15,11 +15,27 @@ import {
   X
 } from 'lucide-react';
 
+const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  BarChart3,
+  Cloud,
+  Server,
+  Activity,
+  Database,
+  Shield,
+  Globe,
+  Zap,
+  Users,
+  Settings,
+};
+
+
+import { LucideIcon } from 'lucide-react';
+
 interface NavigationItem {
   name: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  current: boolean;
+  icon: LucideIcon;  // corregir tipo icon aquí
+  current?: boolean; // opcional
 }
 
 interface SidebarProps {
@@ -30,11 +46,14 @@ const Sidebar: React.FC<SidebarProps> = ({ navigation }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
-  // Actualizar el estado current basado en la ubicación actual
   const updatedNavigation = navigation.map(item => ({
     ...item,
-    current: location.pathname === item.href
+    current: location.pathname === item.href,
   }));
+
+  const renderIcon = (IconComponent: LucideIcon, cls: string) => (
+    <IconComponent className={cls} />
+  );
 
   return (
     <>
@@ -63,11 +82,12 @@ const Sidebar: React.FC<SidebarProps> = ({ navigation }) => {
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                   >
-                    <item.icon
-                      className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                        item.current ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
-                      }`}
-                    />
+                    {renderIcon(
+                        item.icon, 
+                        `mr-3 h-5 w-5 flex-shrink-0 ${
+                          item.current ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
+                        }`
+                      )}
                     {item.name}
                   </Link>
                 ))}
@@ -130,11 +150,9 @@ const Sidebar: React.FC<SidebarProps> = ({ navigation }) => {
                     }`}
                     onClick={() => setSidebarOpen(false)}
                   >
-                    <item.icon
-                      className={`mr-4 h-6 w-6 flex-shrink-0 ${
-                        item.current ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
-                      }`}
-                    />
+                    {renderIcon(item.icon, `mr-4 h-6 w-6 flex-shrink-0 ${
+                      item.current ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
+                    }`)}
                     {item.name}
                   </Link>
                 ))}

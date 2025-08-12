@@ -21,15 +21,16 @@ export const authenticateToken = (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
   if (!token) {
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       error: 'Token de acceso requerido'
     });
+    return;
   }
 
   try {
@@ -42,25 +43,29 @@ export const authenticateToken = (
 
     req.user = decoded;
     next();
+    return;
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         error: 'Token inválido'
       });
+      return;
     }
 
     if (error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         error: 'Token expirado'
       });
+      return;
     }
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: 'Error al verificar token'
     });
+    return;
   }
 };
 
@@ -72,12 +77,13 @@ export const optionalAuth = (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return next(); // Continuar sin autenticación
+    next(); // Continuar sin autenticación
+    return;
   }
 
   try {
@@ -90,9 +96,11 @@ export const optionalAuth = (
 
     req.user = decoded;
     next();
+    return;
   } catch (error) {
     // Si hay error con el token, continuar sin autenticación
     next();
+    return;
   }
 };
 
@@ -101,17 +109,19 @@ export const optionalAuth = (
 // ========================================
 
 export const requireRole = (roles: string[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         error: 'Autenticación requerida'
       });
+      return;
     }
 
     // TODO: Implementar verificación de roles cuando se agregue la tabla de roles
     // Por ahora, permitimos acceso a todos los usuarios autenticados
     next();
+    return;
   };
 };
 
@@ -122,7 +132,7 @@ export const requireRole = (roles: string[]) => {
 export const rateLimit = (maxRequests: number = 100, windowMs: number = 15 * 60 * 1000) => {
   const requests = new Map<string, { count: number; resetTime: number }>();
 
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
     const now = Date.now();
 
@@ -130,17 +140,20 @@ export const rateLimit = (maxRequests: number = 100, windowMs: number = 15 * 60 
 
     if (!userRequests || now > userRequests.resetTime) {
       requests.set(ip, { count: 1, resetTime: now + windowMs });
-      return next();
+      next();
+      return;
     }
 
     if (userRequests.count >= maxRequests) {
-      return res.status(429).json({
+      res.status(429).json({
         success: false,
         error: 'Demasiadas solicitudes. Intenta de nuevo más tarde.'
       });
+      return;
     }
 
     userRequests.count++;
     next();
+    return;
   };
 };

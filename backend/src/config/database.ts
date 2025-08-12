@@ -8,19 +8,24 @@ import { DatabaseConfig } from '../types';
 const dbConfig: DatabaseConfig = {
   host: process.env.POSTGRES_HOST || 'postgres',
   port: parseInt(process.env.POSTGRES_PORT || '5432'),
-  database: process.env.POSTGRES_DB || 'aws_management_db',
-  username: process.env.POSTGRES_USER || 'aws_user',
-  password: process.env.POSTGRES_PASSWORD || 'AwsManagerDB2024!',
+  database: process.env.POSTGRES_DB || 'aws_manager',
+  username: process.env.POSTGRES_USER || 'user',
+  password: process.env.POSTGRES_PASSWORD || 'P@ssw0rd',
   //ssl: process.env.NODE_ENV === 'production'
 };
 
 const poolConfig: PoolConfig = {
-  ...dbConfig,
-  max: 20, // máximo número de conexiones en el pool
-  idleTimeoutMillis: 30000, // tiempo máximo que una conexión puede estar inactiva
-  connectionTimeoutMillis: 2000, // tiempo máximo para establecer una conexión
-  maxUses: 7500, // número máximo de veces que se puede usar una conexión
+  host: dbConfig.host,
+  port: dbConfig.port,
+  database: dbConfig.database,
+  user: dbConfig.username, // <-- aquí mapear "username" a "user"
+  password: dbConfig.password,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+  maxUses: 7500,
 };
+
 
 // Crear el pool de conexiones
 export const pool = new Pool(poolConfig);

@@ -99,7 +99,7 @@ router.post('/register', async (req, res) => {
       name: user.name
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Usuario creado exitosamente',
       data: {
@@ -115,7 +115,7 @@ router.post('/register', async (req, res) => {
 
   } catch (error) {
     console.error('Error en registro:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
     });
@@ -167,7 +167,7 @@ router.post('/login', async (req, res) => {
       name: user.name
     });
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Login exitoso',
       data: {
@@ -183,7 +183,7 @@ router.post('/login', async (req, res) => {
 
   } catch (error) {
     console.error('Error en login:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
     });
@@ -220,7 +220,7 @@ router.get('/me', async (req, res) => {
 
     const user = result.rows[0];
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         user: {
@@ -241,7 +241,7 @@ router.get('/me', async (req, res) => {
     }
 
     console.error('Error en /me:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
     });
@@ -252,7 +252,7 @@ router.get('/me', async (req, res) => {
 router.post('/logout', (req, res) => {
   // En una implementación real, podrías invalidar el token
   // Por ahora, solo devolvemos éxito
-  res.json({
+  return res.json({
     success: true,
     message: 'Logout exitoso'
   });

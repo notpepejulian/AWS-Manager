@@ -1,22 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { io, Socket } from 'socket.io-client';
-import toast from 'react-hot-toast';
-import { 
-  Cloud, 
-  Server, 
-  Database, 
-  BarChart3, 
-  Settings, 
-  Users,
-  Activity,
-  Shield,
-  Globe,
-  Zap
-} from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
-// Componentes (se crearán después)
+// Componentes
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import Dashboard from '@/pages/Dashboard';
@@ -26,8 +14,28 @@ import Logs from '@/pages/Logs';
 import SettingsPage from '@/pages/Settings';
 import Login from '@/pages/Login';
 
-// Servicios (se crearán después)
+// Servicios
 import { apiService } from '@/services/apiService';
+import { useAuth } from '@/store/authStore';
+
+
+import { BarChart3, Cloud, Server, Activity, Settings, type LucideIcon } from 'lucide-react';
+
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+  current?: boolean;
+}
+
+const navigation: NavigationItem[] = [
+  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+  { name: 'Cuentas AWS', href: '/accounts', icon: Cloud },
+  { name: 'Recursos', href: '/resources', icon: Server },
+  { name: 'Logs', href: '/logs', icon: Activity },
+  { name: 'Configuración', href: '/settings', icon: Settings },
+];
+
 
 // Tipos
 interface BackendStatus {
@@ -43,87 +51,126 @@ interface BackendStatus {
   environment: string;
 }
 
+// Componente de protección de rutas
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, checkAuth, isLoading } = useAuth();
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    const verifyAuth = async () => {
+      await checkAuth();
+      setIsChecking(false);
+    };
+    verifyAuth();
+  }, [checkAuth]);
+
+  if (isLoading || isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verificando autenticación...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// Componente principal de la aplicación
 const App: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const { isAuthenticated, logout } = useAuth();
+  const location = useLocation();
 
   // Verificar estado del backend
   const { data: backendStatus, error: backendError } = useQuery<BackendStatus>(
-    'backendStatus',
-    () => apiService.getHealth(),
+    'backendHealth',
+    apiService.getHealth,
     {
       refetchInterval: 30000, // Verificar cada 30 segundos
       retry: 3,
-      onError: (error) => {
-        console.error('Error conectando al backend:', error);
-        toast.error('No se puede conectar al servidor');
-      }
+      retryDelay: 1000,
     }
   );
 
   // Configurar WebSocket
   useEffect(() => {
-    const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:4000');
-    
-    newSocket.on('connect', () => {
-      setIsConnected(true);
-      console.log('🔌 Conectado al servidor WebSocket');
-      toast.success('Conectado en tiempo real');
-    });
+    if (isAuthenticated) {
+      const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:4000', {
+        transports: ['websocket', 'polling'],
+      });
 
-    newSocket.on('disconnect', () => {
-      setIsConnected(false);
-      console.log('🔌 Desconectado del servidor WebSocket');
-      toast.error('Desconectado del servidor');
-    });
+      newSocket.on('connect', () => {
+        console.log('🔌 Conectado al servidor WebSocket');
+        setIsConnected(true);
+        toast.success('Conectado al servidor');
+      });
 
-    newSocket.on('error', (error) => {
-      console.error('❌ Error de WebSocket:', error);
-      toast.error('Error de conexión en tiempo real');
-    });
+      newSocket.on('disconnect', () => {
+        console.log('🔌 Desconectado del servidor WebSocket');
+        setIsConnected(false);
+        toast.error('Desconectado del servidor');
+      });
 
-    setSocket(newSocket);
+      newSocket.on('connect_error', (error) => {
+        console.error('❌ Error de conexión WebSocket:', error);
+        setIsConnected(false);
+        toast.error('Error de conexión con el servidor');
+      });
 
-    return () => {
-      newSocket.close();
-    };
-  }, []);
+      setSocket(newSocket);
 
-  // Unirse a la cuenta seleccionada
-  useEffect(() => {
-    if (socket && selectedAccount) {
-      socket.emit('join-account', selectedAccount);
+      return () => {
+        newSocket.close();
+      };
     }
-  }, [socket, selectedAccount]);
+  }, [isAuthenticated]);
 
-  // Menú de navegación
+  // Navegación
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: BarChart3, current: true },
-    { name: 'Cuentas AWS', href: '/accounts', icon: Cloud, current: false },
-    { name: 'Recursos', href: '/resources', icon: Server, current: false },
-    { name: 'Logs', href: '/logs', icon: Activity, current: false },
-    { name: 'Base de Datos', href: '/database', icon: Database, current: false },
-    { name: 'Seguridad', href: '/security', icon: Shield, current: false },
-    { name: 'Redes', href: '/networking', icon: Globe, current: false },
-    { name: 'Automatización', href: '/automation', icon: Zap, current: false },
-    { name: 'Usuarios', href: '/users', icon: Users, current: false },
-    { name: 'Configuración', href: '/settings', icon: Settings, current: false },
+    { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+    { name: 'Cuentas AWS', href: '/accounts', icon: Cloud },
+    { name: 'Recursos', href: '/resources', icon: Server },
+    { name: 'Logs', href: '/logs', icon: Activity },
+    { name: 'Configuración', href: '/settings', icon: Settings },
   ];
+  
+  
 
-  // Si hay error de backend, mostrar página de error
+  // Si no está autenticado y no está en login, mostrar login
+  if (!isAuthenticated && location.pathname !== '/login') {
+    return <Login />;
+  }
+
+  // Si está en login y está autenticado, redirigir al dashboard
+  if (isAuthenticated && location.pathname === '/login') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Si está en login, mostrar solo la página de login
+  if (location.pathname === '/login') {
+    return <Login />;
+  }
+
+  // Mostrar error si el backend no está disponible
   if (backendError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="text-6xl mb-4">🚫</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Servidor no disponible
-          </h1>
+          <div className="text-error-600 text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Error de Conexión</h1>
           <p className="text-gray-600 mb-4">
-            No se puede conectar al servidor backend. Verifica que esté ejecutándose.
+            No se puede conectar con el servidor backend.
           </p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="btn-primary"
           >
@@ -134,64 +181,90 @@ const App: React.FC = () => {
     );
   }
 
-  // Si el backend está cargando, mostrar loading
-  if (!backendStatus) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="spinner w-8 h-8 mx-auto mb-4"></div>
-          <p className="text-gray-600">Conectando al servidor...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <Header 
-        backendStatus={backendStatus}
-        isConnected={isConnected}
-        selectedAccount={selectedAccount}
-        onAccountChange={setSelectedAccount}
-      />
+    <div className="h-screen flex overflow-hidden bg-gray-100">
+      {/* Sidebar */}
+      <Sidebar navigation={navigation} />
 
-      {/* Sidebar y contenido principal */}
-      <div className="flex">
-        <Sidebar navigation={navigation} />
-        
-        {/* Contenido principal */}
-        <main className="flex-1 lg:ml-64">
-          <div className="p-6">
-            <Routes>
-              <Route path="/" element={<Dashboard socket={socket} selectedAccount={selectedAccount} />} />
-              <Route path="/accounts" element={<Accounts />} />
-              <Route path="/resources" element={<Resources selectedAccount={selectedAccount} />} />
-              <Route path="/logs" element={<Logs selectedAccount={selectedAccount} />} />
-              <Route path="/database" element={<div>Base de Datos (en desarrollo)</div>} />
-              <Route path="/security" element={<div>Seguridad (en desarrollo)</div>} />
-              <Route path="/networking" element={<div>Redes (en desarrollo)</div>} />
-              <Route path="/automation" element={<div>Automatización (en desarrollo)</div>} />
-              <Route path="/users" element={<div>Usuarios (en desarrollo)</div>} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="*" element={<div>Página no encontrada</div>} />
-            </Routes>
+      {/* Contenido principal */}
+      <div className="flex flex-col w-0 flex-1 overflow-hidden">
+        {/* Header */}
+        <Header
+          backendStatus={backendStatus || {
+            status: 'unknown',
+            uptime: 0,
+            timestamp: new Date().toISOString(),
+            memory: { rss: 0, heapTotal: 0, heapUsed: 0, external: 0 },
+            environment: 'unknown'
+          }}
+          isConnected={isConnected}
+          selectedAccount={selectedAccount}
+          onAccountChange={setSelectedAccount}
+        />
+
+        {/* Contenido de la página */}
+        <main className="flex-1 relative overflow-y-auto focus:outline-none">
+          <div className="py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <Routes>
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard socket={socket} selectedAccount={selectedAccount} />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/accounts"
+                  element={
+                    <ProtectedRoute>
+                      <Accounts />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/resources"
+                  element={
+                    <ProtectedRoute>
+                      <Resources selectedAccount={selectedAccount} />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/logs"
+                  element={
+                    <ProtectedRoute>
+                      <Logs selectedAccount={selectedAccount} />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <SettingsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/login" element={<Login />} />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </div>
           </div>
         </main>
       </div>
 
       {/* Indicador de estado de conexión */}
-      <div className={`fixed bottom-4 right-4 p-3 rounded-full shadow-lg transition-all duration-300 ${
-        isConnected ? 'bg-success-500 text-white' : 'bg-error-500 text-white'
-      }`}>
-        <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-white' : 'bg-white'}`}></div>
-          <span className="text-sm font-medium">
-            {isConnected ? 'Conectado' : 'Desconectado'}
-          </span>
+      {!isConnected && (
+        <div className="fixed bottom-4 right-4 bg-error-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            <span className="text-sm">Desconectado</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -5,7 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-// import { connectDB, initializeTables } from './config/database';
+import { connectDB, initializeTables } from './config/database';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -62,11 +62,13 @@ app.get('/health', (req, res) => {
 // RUTAS DE LA API
 // ========================================
 
-// TODO: Importar y usar las rutas cuando estén creadas
-// app.use('/api/auth', authRoutes);
-// app.use('/api/aws', awsRoutes);
-// app.use('/api/dashboards', dashboardRoutes);
-// app.use('/api/users', userRoutes);
+// Importar rutas
+import authRoutes from './routes/auth';
+import awsRoutes from './routes/aws';
+
+// Usar rutas
+app.use('/api/auth', authRoutes);
+app.use('/api/aws', awsRoutes);
 
 // ========================================
 // WEBSOCKET PARA TIEMPO REAL
@@ -126,6 +128,12 @@ app.use('*', (req, res) => {
 
 const startServer = async () => {
   try {
+    // Conectar a la base de datos
+    await connectDB();
+    
+    // Inicializar tablas
+    await initializeTables();
+    
     // Iniciar servidor
     server.listen(PORT, () => {
       console.log('🚀 Servidor iniciado correctamente');

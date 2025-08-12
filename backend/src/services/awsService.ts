@@ -6,7 +6,7 @@ import { AWSAccount, AWSConfig, EC2Instance, LoadBalancer, VPC, CloudWatchMetric
 // ========================================
 
 export class AWSService {
-  private config: AWSConfig;
+  private config: AWSConfig & { roleArn?: string; mfaCode?: string };
   private services: {
     ec2?: AWS.EC2;
     elbv2?: AWS.ELBv2;
@@ -16,7 +16,7 @@ export class AWSService {
     sts?: AWS.STS;
   } = {};
 
-  constructor(config: AWSConfig) {
+  constructor(config: AWSConfig & { roleArn?: string; mfaCode?: string }) {
     this.config = config;
     this.initializeServices();
   }
@@ -26,40 +26,54 @@ export class AWSService {
   // ========================================
 
   private initializeServices(): void {
-    const awsConfig: AWS.Config = {
+    const base = {
       region: this.config.region,
       accessKeyId: this.config.accessKeyId,
       secretAccessKey: this.config.secretAccessKey,
       sessionToken: this.config.sessionToken,
     };
-
-    this.services.ec2 = new AWS.EC2(awsConfig);
-    this.services.elbv2 = new AWS.ELBv2(awsConfig);
-    this.services.cloudwatch = new AWS.CloudWatch(awsConfig);
-    this.services.logs = new AWS.CloudWatchLogs(awsConfig);
-    this.services.iam = new AWS.IAM(awsConfig);
-    this.services.sts = new AWS.STS(awsConfig);
+    this.services.sts = new AWS.STS(base);
+    this.services.ec2 = new AWS.EC2(base);
+    this.services.elbv2 = new AWS.ELBv2(base);
+    this.services.cloudwatch = new AWS.CloudWatch(base);
+    this.services.logs = new AWS.CloudWatchLogs(base);
+    this.services.iam = new AWS.IAM(base);
   }
 
   // ========================================
   // MÉTODOS DE AUTENTICACIÓN
   // ========================================
 
-  async assumeRole(roleArn: string, sessionName: string, mfaCode?: string): Promise<AWS.STS.AssumeRoleResponse> {
-    if (!this.services.sts) throw new Error('STS service not initialized');
+  async assumeRole(): Promise<AWS.STS.Credentials> {
+    if (!this.services.sts) throw new Error('STS no inicializado');
+    if (!this.config.roleArn) throw new Error('roleArn no especificado');
 
     const params: AWS.STS.AssumeRoleRequest = {
-      RoleArn: roleArn,
-      RoleSessionName: sessionName,
-      DurationSeconds: 3600, // 1 hora
+      RoleArn: this.config.roleArn,
+      RoleSessionName: `aws-manager-${Date.now()}`,
+      DurationSeconds: 3600,
     };
-
-    if (mfaCode) {
+    if (this.config.mfaCode && process.env.AWS_MFA_SERIAL) {
       params.SerialNumber = process.env.AWS_MFA_SERIAL;
-      params.TokenCode = mfaCode;
+      params.TokenCode = this.config.mfaCode;
     }
 
-    return await this.services.sts.assumeRole(params).promise();
+    const resp = await this.services.sts.assumeRole(params).promise();
+    if (!resp.Credentials) throw new Error('No se obtuvieron credenciales');
+
+    const temp = {
+      region: this.config.region,
+      accessKeyId: resp.Credentials.AccessKeyId!,
+      secretAccessKey: resp.Credentials.SecretAccessKey!,
+      sessionToken: resp.Credentials.SessionToken!,
+    };
+    this.services.ec2 = new AWS.EC2(temp);
+    this.services.elbv2 = new AWS.ELBv2(temp);
+    this.services.cloudwatch = new AWS.CloudWatch(temp);
+    this.services.logs = new AWS.CloudWatchLogs(temp);
+    this.services.iam = new AWS.IAM(temp);
+
+    return resp.Credentials;
   }
 
   async getCallerIdentity(): Promise<AWS.STS.GetCallerIdentityResponse> {
@@ -348,8 +362,8 @@ export class AWSService {
         logStreams.push({
           logStreamName: ls.logStreamName || '',
           creationTime: ls.creationTime || 0,
-          firstEventTime: ls.firstEventTime,
-          lastEventTime: ls.lastEventTime,
+          firstEventTime: ls.firstEventTimestamp,
+          lastEventTime: ls.lastEventTimestamp,
           storedBytes: ls.storedBytes || 0,
           logEvents: [], // Se llenará si es necesario
         });
