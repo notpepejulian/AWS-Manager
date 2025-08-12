@@ -5,18 +5,18 @@ import { io, Socket } from 'socket.io-client';
 import { toast } from 'react-hot-toast';
 
 // Componentes
-import Sidebar from '@/components/layout/Sidebar';
-import Header from '@/components/layout/Header';
-import Dashboard from '@/pages/Dashboard';
-import Accounts from '@/pages/Accounts';
-import Resources from '@/pages/Resources';
-import Logs from '@/pages/Logs';
-import SettingsPage from '@/pages/Settings';
-import Login from '@/pages/Login';
+import Sidebar from './components/layout/Sidebar';
+import Header from './components/layout/Header';
+import Dashboard from './pages/Dashboard';
+import Accounts from './pages/Accounts';
+import Resources from './pages/Resources';
+import Logs from './pages/Logs';
+import SettingsPage from './pages/Settings';
+import Login from './pages/Login';
 
 // Servicios
-import { apiService } from '@/services/apiService';
-import { useAuth } from '@/store/authStore';
+import { apiService } from './services/apiService';
+import { useAuth } from './store/authStore';
 
 
 import { BarChart3, Cloud, Server, Activity, Settings, type LucideIcon } from 'lucide-react';

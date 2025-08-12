@@ -1,247 +1,59 @@
 # AWS Management System
 
-Sistema completo de gestión de AWS con frontend React, backend Node.js, base de datos PostgreSQL y automatización con N8N.
+## 1. Introducción al proyecto
 
-## 🚀 Características
+AWS Management System es una plataforma web diseñada para centralizar la gestión de múltiples cuentas de AWS, permitiendo a los usuarios visualizar y administrar recursos, acceder a logs en tiempo real, y generar dashboards personalizados. El objetivo es ofrecer una visión global y controlada de la infraestructura cloud, facilitando la administración, la auditoría y la automatización de tareas. Próximamente, se integrará con N8N para potenciar la automatización y la generación de insights mediante inteligencia artificial.
 
-- **Frontend**: Aplicación React moderna con interfaz de usuario intuitiva
-- **Backend**: API REST con Express.js y Node.js
-- **Base de Datos**: PostgreSQL para almacenamiento persistente
-- **Automatización**: N8N para workflows y automatización de tareas
-- **Docker**: Contenedores orquestados con Docker Compose
+La aplicación está compuesta por:
+- Un **frontend** moderno basado en React.
+- Un **backend** robusto construido con Node.js y Express.
+- Una base de datos **PostgreSQL** para almacenamiento seguro y persistente.
+- Orquestación de servicios mediante **Docker Compose**.
+- (Próximamente) Integración con **N8N** para flujos automatizados e IA.
 
-## 📋 Prerrequisitos
+## 2. Clonar el repositorio y herramientas necesarias
 
-- Docker y Docker Compose instalados
-- Git
-- Editor de código (VS Code recomendado)
-
-## 🛠️ Instalación y Configuración
-
-### 1. Clonar el repositorio
+Para comenzar a usar el proyecto, simplemente clona el repositorio:
 
 ```bash
-git clone <tu-repositorio>
+git clone <URL-del-repositorio>
 cd aws-management
 ```
 
-### 2. Configurar variables de entorno
+**Herramientas necesarias:**
+- Docker y Docker Compose (para levantar los servicios de manera sencilla y reproducible)
+- Git (para clonar y gestionar el código)
+- (Opcional) Un editor de código como VS Code
 
-Copia el archivo de ejemplo y ajusta los valores:
+> **Nota:** Algunas configuraciones sensibles, como archivos de variables de entorno (`.env`), no se incluyen en el repositorio por seguridad. Deberás crearlos manualmente siguiendo las plantillas o instrucciones proporcionadas en el proyecto.
 
-```bash
-cp .env.example .env
-```
+## 3. Utilidad del sistema
 
-Edita el archivo `.env` con tus configuraciones:
+Esta plataforma está pensada para equipos y profesionales que gestionan múltiples cuentas y recursos en AWS, ofreciendo:
 
-```bash
-# Configuración básica del proyecto
-PROJECT_NAME=aws-management
-NODE_ENV=development
-NETWORK_NAME=aws-manager-net
+- **Gestión centralizada de cuentas AWS:** Añade, visualiza y administra varias cuentas desde un solo lugar.
+- **Visualización de recursos:** Consulta información relevante de servicios como EC2, ALB, VPC, entre otros.
+- **Acceso a logs en tiempo real:** Visualiza logs y eventos de tus recursos para un monitoreo efectivo.
+- **Dashboards personalizables:** Crea paneles con métricas y visualizaciones adaptadas a tus necesidades.
+- **Seguridad y control de acceso:** Cada usuario tiene su propio perfil y acceso restringido a sus datos.
+- **Automatización (próximamente):** Con N8N, podrás crear flujos automáticos e integrar inteligencia artificial para análisis avanzados y generación de reportes.
 
-# Versiones de Docker
-NODE_VERSION=20
-POSTGRES_VERSION=15
-N8N_VERSION=latest
+El sistema está en constante evolución, incorporando nuevas funcionalidades y servicios para facilitar la administración cloud y la toma de decisiones basada en datos.
 
-# Puertos de los servicios
-BACKEND_PORT=4000
-FRONTEND_PORT=3000
-N8N_PORT=5678
-POSTGRES_PORT=5432
+## Estructura general del proyecto
 
-# Configuración de N8N
-N8N_USER=admin
-N8N_PASSWORD=TuContraseñaSegura2024!
-TIMEZONE=America/Mexico_City
-
-# Configuración de PostgreSQL
-POSTGRES_USER=aws_user
-POSTGRES_PASSWORD=TuContraseñaDBSegura2024!
-POSTGRES_DB=aws_management_db
-```
-
-### 3. Iniciar los servicios
-
-```bash
-docker compose up -d
-```
-
-### 4. Verificar que todo funcione
-
-```bash
-docker compose ps
-```
-
-## 🌐 Acceso a los servicios
-
-Una vez que todos los contenedores estén funcionando, puedes acceder a:
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:4000
-- **N8N**: http://localhost:5678
-- **PostgreSQL**: localhost:5432
-
-## 📁 Estructura del proyecto
-
-```
+```text
 aws-management/
-├── backend/                 # API REST con Express
-│   ├── src/
-│   │   └── index.js        # Servidor principal
-│   ├── package.json
-│   └── Dockerfile
-├── frontend/               # Aplicación React
-│   ├── src/
-│   │   ├── App.js
-│   │   ├── App.css
-│   │   └── index.js
-│   ├── public/
-│   │   └── index.html
-│   ├── package.json
-│   └── Dockerfile
-├── n8n_data/              # Datos persistentes de N8N
-├── postgres_data/         # Datos persistentes de PostgreSQL
-├── docker-compose.yml     # Configuración de Docker Compose
-├── .env                   # Variables de entorno (no subir al repo)
-├── .env.example          # Plantilla de variables de entorno
-├── .gitignore            # Archivos a ignorar en Git
-└── README.md             # Este archivo
+├── backend/        # API y lógica de negocio
+│   └── src/
+├── frontend/       # Aplicación web (React)
+│   └── src/
+├── n8n_data/       # Datos persistentes de N8N (automatización)
+├── postgres_data/  # Datos persistentes de PostgreSQL
+├── docker-compose.yml  # Orquestación de servicios
+└── README.md       # Documentación general
 ```
-
-## 🔧 Comandos útiles
-
-### Gestión de contenedores
-
-```bash
-# Iniciar todos los servicios
-docker compose up -d
-
-# Detener todos los servicios
-docker compose down
-
-# Ver logs de un servicio específico
-docker compose logs backend
-docker compose logs frontend
-docker compose logs postgres
-docker compose logs n8n
-
-# Reiniciar un servicio específico
-docker compose restart backend
-
-# Ver estado de los contenedores
-docker compose ps
-```
-
-### Desarrollo
-
-```bash
-# Instalar dependencias del backend (desde el host)
-cd backend && npm install
-
-# Instalar dependencias del frontend (desde el host)
-cd frontend && npm install
-
-# Ejecutar tests (cuando estén implementados)
-cd backend && npm test
-cd frontend && npm test
-```
-
-### Base de datos
-
-```bash
-# Conectar a PostgreSQL
-docker compose exec postgres psql -U aws_user -d aws_management_db
-
-# Hacer backup de la base de datos
-docker compose exec postgres pg_dump -U aws_user aws_management_db > backup.sql
-
-# Restaurar backup
-docker compose exec -T postgres psql -U aws_user -d aws_management_db < backup.sql
-```
-
-## 🔒 Seguridad
-
-- **Nunca subas el archivo `.env` al repositorio**
-- Cambia las contraseñas por defecto en producción
-- Usa HTTPS en producción
-- Configura firewalls apropiados
-- Mantén las imágenes de Docker actualizadas
-
-## 🐛 Solución de problemas
-
-### Contenedores no inician
-
-```bash
-# Ver logs detallados
-docker compose logs
-
-# Limpiar y recrear contenedores
-docker compose down -v
-docker compose up -d
-```
-
-### Problemas de permisos con PostgreSQL
-
-```bash
-# Corregir permisos del directorio de datos
-sudo chown -R 999:999 postgres_data/
-```
-
-### Problemas de red
-
-```bash
-# Verificar redes de Docker
-docker network ls
-docker network inspect awsmanagement_aws-manager-net
-```
-
-## 📝 Desarrollo
-
-### Agregar nuevas dependencias
-
-**Backend:**
-```bash
-cd backend
-npm install nueva-dependencia
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm install nueva-dependencia
-```
-
-### Estructura de la API
-
-El backend expone los siguientes endpoints:
-
-- `GET /` - Información del API
-- `GET /health` - Estado de salud del servicio
-- `GET /api/aws/resources` - Recursos de AWS (pendiente de implementar)
-
-## 🤝 Contribución
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
-
-## 📞 Soporte
-
-Si tienes problemas o preguntas:
-
-1. Revisa la sección de solución de problemas
-2. Verifica los logs de los contenedores
-3. Abre un issue en el repositorio
 
 ---
 
-**Nota**: Este es un proyecto en desarrollo. Algunas características pueden estar en implementación.
+**Nota:** Este proyecto es de carácter general y educativo. Para entornos productivos, revisa y adapta las configuraciones de seguridad y despliegue según tus necesidades.
