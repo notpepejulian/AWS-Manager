@@ -4,8 +4,10 @@ import { apiService } from '../services/apiService';
 
 interface Account {
   id: string;
+  account_id: string;
   name: string;
   roleArn: string;
+  description: string ;
   status: string;
   lastAccess: string;
 }
@@ -19,12 +21,12 @@ const Accounts: React.FC = () => {
     accountId: string;
     accountName: string;
     roleArn: string;
-    // description?: string;
+    description?: string; // Añadido campo de descripción
   }>({
     accountId: '',
     accountName: '',
     roleArn: '',
-    // description: '',
+    description: '', // Inicializado como vacío
   });
 
   // Cargar cuentas al montar
@@ -40,9 +42,11 @@ const Accounts: React.FC = () => {
       if (res.success && res.data) {
         setAccounts(
           res.data.map((acc: any) => ({
-            id: acc.id || acc.account_id,
+            id: acc.id! ,
+            account_id: acc.account_id!,
             name: acc.account_name || acc.name,
-            roleArn: acc.role_arn.split('/').pop() || acc.role_arn, // Extraer solo el nombre del rol
+            roleArn: acc.role_arn.split('/').pop() || acc.role_arn, // Extraer solo el nombre del rol,
+            description: acc.description || null,
             status: acc.is_active ? 'Activa' : 'Inactiva',
             lastAccess: acc.last_assumed_at ? new Date(acc.last_assumed_at).toLocaleString() : 'Nunca',
           }))
@@ -67,11 +71,12 @@ const Accounts: React.FC = () => {
         accountId: newAccount.accountId,
         accountName: newAccount.accountName,
         roleArn: `arn:aws:iam::${newAccount.accountId}:role/${newAccount.roleArn}`, // concatenar ARN completo
+        description: newAccount.description, // Añadido al payload
       };
   
       const response = await apiService.addAWSAccount(payload);
       if (response.success) {
-        setNewAccount({ accountId: '', accountName: '', roleArn: '' }); // Inicializado como vacío
+        setNewAccount({ accountId: '', accountName: '', roleArn: '', description: '' }); // Inicializado como vacío
         await fetchAccounts();
       } else {
         setError(response.error || 'Error al añadir cuenta');
@@ -95,10 +100,11 @@ const Accounts: React.FC = () => {
         accountId: newAccount.accountId,
         accountName: newAccount.accountName,
         roleArn: `arn:aws:iam::${newAccount.accountId}:role/${newAccount.roleArn}`, // concatenar ARN completo
+        description: newAccount.description, // Añadido al payload
       };
       const res = await apiService.addAWSAccount(payload);
       if (res.success) {
-        setNewAccount({ accountId: '', accountName: '', roleArn: '' });
+        setNewAccount({ accountId: '', accountName: '', roleArn: '', description: '' });
         await fetchAccounts();
       } else {
         setError(res.error || 'Error al agregar cuenta'); // Cambiado para reflejar que se está agregando
@@ -182,6 +188,16 @@ const Accounts: React.FC = () => {
                   placeholder="MyRole"
                 />
               </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Descripción</label>
+                <input
+                  type="text"
+                  value={newAccount.description}
+                  onChange={(e) => setNewAccount({ ...newAccount, description: e.target.value })}
+                  className="input-field w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Descripción de la cuenta"
+                />
+              </div>
             </div>
             <div className="flex justify-end space-x-3">
               <button 
@@ -233,19 +249,16 @@ const Accounts: React.FC = () => {
               <tbody>
                 {accounts.map((account) => (
                   <tr key={account.id}>
-                    <td>{account.id}</td>
+                    <td>{account.account_id}</td>
                     <td>{account.name}</td>
                     <td>{account.roleArn}</td>
                     <td><span className={`badge ${account.status === 'Activa' ? 'badge-success' : 'badge-warning'}`}>{account.status}</span></td>
                     <td>{account.lastAccess}</td>
                     <td>
                       <div className="flex space-x-2">
-                        <button 
-                          className="p-1 text-primary-600 hover:text-primary-700"
-                          onClick={() => alert(`Ver detalles de ${account.name}`)}
-                        >
+                        <div className="p-1 text-primary-600 hover:text-primary-700" onClick={() => alert(`Detalles de ${account.name}:\nDescripción: ${account.description}\nAñadido: ${new Date(account.lastAccess).toLocaleDateString()}\nEstado: ${account.status}`)}>
                           <Eye className="h-4 w-4" />
-                        </button>
+                        </div>
                         <button 
                           className="p-1 text-gray-600 hover:text-gray-700"
                           onClick={() => alert(`Configurar ${account.name}`)}

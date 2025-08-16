@@ -113,25 +113,11 @@ export const apiService = {
   // ========================================
 
   async getAWSAccounts(): Promise<ApiResponse<any[]>> {
-
-    // const response = await apiClient.get('/api/aws/accounts');
-    // return response.data;
     try {
       const response = await apiClient.get('/api/aws/accounts');
-      const data = response.data;
-
-      return {
-        success: true,
-        data: data.map((acc: any) => ({
-          account_id: acc.account_id,
-          account_name: acc.account_name,
-          role_arn: acc.role_arn,
-          is_active: acc.is_active,
-          last_assumed_at: acc.last_assumed_at,
-        })),
-      };
-    } catch (err) {
-      return { success: false, error: 'Error al obtener cuentas' };
+      return response.data; // Deja que el interceptor maneje errores.
+    } catch (error) {
+      throw error; // Propaga el error para manejarlo en el componente.
     }
   },
 
@@ -139,6 +125,7 @@ export const apiService = {
     accountId: string;
     accountName: string;
     roleArn: string;
+    description: string;
   }): Promise<ApiResponse> {
     const response = await apiClient.post('/api/aws/accounts', accountData);
     return response.data;
