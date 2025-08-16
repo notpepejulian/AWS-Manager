@@ -12,8 +12,8 @@ const router = express.Router();
 interface CreateAccountRequest {
   accountId: string;
   accountName: string;
-  roleArn: string;
-  region: string;
+  roleArn: string; // Cambiado de roleName a roleArn
+  is_active: boolean;
   description?: string;
 }
 
@@ -32,9 +32,8 @@ router.get('/accounts', authenticateToken, async (req: AuthenticatedRequest, res
 
     const result = await query(
       `SELECT 
-        id, account_id, account_name, role_arn, region, description, 
-        is_active, created_at, updated_at,
-        last_assumed_at, last_error
+        id, account_id, account_name, role_arn, 
+        is_active, created_at, updated_at
       FROM aws_accounts 
       WHERE user_id = $1 
       ORDER BY created_at DESC`,
@@ -59,17 +58,15 @@ router.get('/accounts', authenticateToken, async (req: AuthenticatedRequest, res
 router.post('/accounts', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.userId;
-    const { accountId, accountName, roleArn, region, description }: CreateAccountRequest = req.body;
+    const { accountId, accountName, roleArn, is_active, description }: CreateAccountRequest = req.body; // Cambiado de roleName a roleArn
 
-    // Validaciones
-    if (!accountId || !accountName || !roleArn || !region) {
+    if (!accountId || !accountName || !roleArn) { // Eliminada la región
       return res.status(400).json({
         success: false,
         error: 'Todos los campos requeridos deben estar presentes'
       });
     }
 
-    // Validar formato del Account ID
     if (!/^\d{12}$/.test(accountId)) {
       return res.status(400).json({
         success: false,
@@ -77,15 +74,8 @@ router.post('/accounts', authenticateToken, async (req: AuthenticatedRequest, re
       });
     }
 
-    // Validar formato del Role ARN
-    if (!roleArn.startsWith('arn:aws:iam::')) {
-      return res.status(400).json({
-        success: false,
-        error: 'Role ARN debe tener un formato válido'
-      });
-    }
+    const fullRoleArn = `arn:aws:iam::${accountId}:role/${roleArn}`; // Cambiado de roleName a roleArn
 
-    // Verificar si la cuenta ya existe para este usuario
     const existingAccount = await query(
       'SELECT id FROM aws_accounts WHERE user_id = $1 AND account_id = $2',
       [userId, accountId]
@@ -98,22 +88,15 @@ router.post('/accounts', authenticateToken, async (req: AuthenticatedRequest, re
       });
     }
 
-    // Crear la cuenta
     const result = await query(
       `INSERT INTO aws_accounts 
-        (user_id, account_id, account_name, role_arn, region, description, is_active) 
-       VALUES ($1, $2, $3, $4, $5, $6, true) 
-       RETURNING id, account_id, account_name, role_arn, region, description, created_at`,
-      [userId, accountId, accountName, roleArn, region, description || null]
+        (user_id, account_id, account_name, role_arn, description, is_active) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING id, account_id, account_name, role_arn, description, created_at`,
+      [userId, accountId, accountName, fullRoleArn, description || null, true] // Eliminada la región
     );
 
     const account = result.rows[0];
-
-    res.status(201).json({
-      success: true,
-      message: 'Cuenta AWS creada exitosamente',
-      data: account
-    });
 
     return res.status(201).json({
       success: true,
@@ -138,7 +121,7 @@ router.get('/accounts/:id', authenticateToken, async (req: AuthenticatedRequest,
 
     const result = await query(
       `SELECT 
-        id, account_id, account_name, role_arn, region, description, 
+        id, account_id, account_name, role_arn, description, 
         is_active, created_at, updated_at, last_assumed_at, last_error
       FROM aws_accounts 
       WHERE id = $1 AND user_id = $2`,
@@ -152,11 +135,10 @@ router.get('/accounts/:id', authenticateToken, async (req: AuthenticatedRequest,
       });
     }
 
-    return res.status(201).json({
+    return res.status(200).json({
       success: true,
-      message: 'Cuenta AWS creada exitosamente',
-      data: accountId
-    });
+      data: result.rows[0]
+    });       
 
   } catch (error) {
     console.error('Error obteniendo cuenta AWS:', error);
@@ -172,7 +154,7 @@ router.put('/accounts/:id', authenticateToken, async (req: AuthenticatedRequest,
   try {
     const userId = req.user!.userId;
     const accountId = req.params.id;
-    const { accountName, roleArn, region, description, isActive } = req.body;
+    const { accountName, roleArn, description, isActive } = req.body;
 
     // Verificar que la cuenta existe y pertenece al usuario
     const existingAccount = await query(
@@ -192,13 +174,12 @@ router.put('/accounts/:id', authenticateToken, async (req: AuthenticatedRequest,
       `UPDATE aws_accounts 
        SET account_name = COALESCE($1, account_name),
            role_arn = COALESCE($2, role_arn),
-           region = COALESCE($3, region),
-           description = COALESCE($4, description),
-           is_active = COALESCE($5, is_active),
+           description = COALESCE($3, description),
+           is_active = COALESCE($4, is_active),
            updated_at = NOW()
-       WHERE id = $6 AND user_id = $7
-       RETURNING id, account_id, account_name, role_arn, region, description, is_active, updated_at`,
-      [accountName, roleArn, region, description, isActive, accountId, userId]
+       WHERE id = $5 AND user_id = $6
+       RETURNING id, account_id, account_name, role_arn, description, is_active, updated_at`,
+      [accountName, roleArn, description, isActive, accountId, userId]
     );
 
     return res.json({

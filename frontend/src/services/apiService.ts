@@ -35,6 +35,8 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
       window.location.href = '/login';
+    } else if (error.response?.status === 400) {
+      console.error('Error en la solicitud:', error.response.data);
     }
     return Promise.reject(error);
   }
@@ -88,8 +90,13 @@ export const apiService = {
   // ========================================
 
   async login(email: string, password: string): Promise<ApiResponse<{ token: string; user: any }>> {
-    const response = await apiClient.post('/api/auth/login', { email, password });
-    return response.data;
+    try {
+      const response = await apiClient.post('/api/auth/login', { email, password });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error en el inicio de sesión:', error.response?.data);
+      throw error; // Re-lanzar el error para que pueda ser manejado en el componente
+    }
   },
 
   async register(userData: { email: string; password: string; name: string }): Promise<ApiResponse> {
@@ -106,15 +113,32 @@ export const apiService = {
   // ========================================
 
   async getAWSAccounts(): Promise<ApiResponse<any[]>> {
-    const response = await apiClient.get('/api/aws/accounts');
-    return response.data;
+
+    // const response = await apiClient.get('/api/aws/accounts');
+    // return response.data;
+    try {
+      const response = await apiClient.get('/api/aws/accounts');
+      const data = response.data;
+
+      return {
+        success: true,
+        data: data.map((acc: any) => ({
+          account_id: acc.account_id,
+          account_name: acc.account_name,
+          role_arn: acc.role_arn,
+          is_active: acc.is_active,
+          last_assumed_at: acc.last_assumed_at,
+        })),
+      };
+    } catch (err) {
+      return { success: false, error: 'Error al obtener cuentas' };
+    }
   },
 
   async addAWSAccount(accountData: {
     accountId: string;
     accountName: string;
     roleArn: string;
-    region: string;
   }): Promise<ApiResponse> {
     const response = await apiClient.post('/api/aws/accounts', accountData);
     return response.data;
@@ -136,27 +160,23 @@ export const apiService = {
   // RECURSOS AWS
   // ========================================
 
-  async getEC2Instances(accountId: string, region?: string): Promise<ApiResponse<any[]>> {
-    const params = region ? { region } : {};
-    const response = await apiClient.get(`/api/aws/accounts/${accountId}/ec2/instances`, { params });
+  async getEC2Instances(accountId: string): Promise<ApiResponse<any[]>> {
+    const response = await apiClient.get(`/api/aws/accounts/${accountId}/ec2/instances`);
     return response.data;
   },
 
-  async getLoadBalancers(accountId: string, region?: string): Promise<ApiResponse<any[]>> {
-    const params = region ? { region } : {};
-    const response = await apiClient.get(`/api/aws/accounts/${accountId}/elb/load-balancers`, { params });
+  async getLoadBalancers(accountId: string): Promise<ApiResponse<any[]>> {
+    const response = await apiClient.get(`/api/aws/accounts/${accountId}/elb/load-balancers`);
     return response.data;
   },
 
-  async getVPCs(accountId: string, region?: string): Promise<ApiResponse<any[]>> {
-    const params = region ? { region } : {};
-    const response = await apiClient.get(`/api/aws/accounts/${accountId}/ec2/vpcs`, { params });
+  async getVPCs(accountId: string): Promise<ApiResponse<any[]>> {
+    const response = await apiClient.get(`/api/aws/accounts/${accountId}/ec2/vpcs`);
     return response.data;
   },
 
-  async getCompleteInventory(accountId: string, region?: string): Promise<ApiResponse<any>> {
-    const params = region ? { region } : {};
-    const response = await apiClient.get(`/api/aws/accounts/${accountId}/inventory`, { params });
+  async getCompleteInventory(accountId: string): Promise<ApiResponse<any>> {
+    const response = await apiClient.get(`/api/aws/accounts/${accountId}/inventory`);
     return response.data;
   },
 

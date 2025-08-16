@@ -9,6 +9,8 @@ import {
   Cloud,
   Activity
 } from 'lucide-react';
+import { useAuth } from '../../store/authStore';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   backendStatus: {
@@ -36,6 +38,8 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const { logout, userName, userEmail } = useAuth();
+  const navigate = useNavigate();
 
   // Datos de ejemplo para las cuentas AWS
   const awsAccounts = [
@@ -161,23 +165,42 @@ const Header: React.FC<HeaderProps> = ({
                 className="flex items-center space-x-2 p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-lg"
               >
                 <User className="h-6 w-6" />
-                <span className="text-sm font-medium text-gray-700">Admin</span>
+                <span className="text-sm font-medium text-gray-700">{userName || 'Usuario'}</span>
                 <ChevronDown className="h-4 w-4" />
               </button>
 
               {showUserMenu && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-aws border border-gray-200 z-50">
                   <div className="py-1">
-                    <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate('/profile');
+                      }}
+                    >
                       <User className="h-4 w-4 mr-2" />
                       Perfil
                     </button>
-                    <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate('/settings');
+                      }}
+                    >
                       <Settings className="h-4 w-4 mr-2" />
                       Configuración
                     </button>
                     <hr className="my-1" />
-                    <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        logout();
+                        navigate('/login');
+                      }}
+                    >
                       <LogOut className="h-4 w-4 mr-2" />
                       Cerrar sesión
                     </button>
