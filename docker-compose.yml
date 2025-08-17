@@ -11,7 +11,7 @@ services:
     command: sh -c "npm install && npm run start:dev"
     environment:
       - NODE_ENV=${NODE_ENV}
-      - JWT_SECRET=${JWT_SECRET}   # <-- agregar aquí
+      - JWT_SECRET=${JWT_SECRET} 
 
     networks:
       - ${NETWORK_NAME}
