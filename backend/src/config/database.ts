@@ -106,6 +106,7 @@ export const initializeTables = async (): Promise<void> => {
         last_accessed TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        description VARCHAR(50) DEFAULT 'Sin descripción',
         UNIQUE(user_id, account_id)
       )
     `);

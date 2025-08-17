@@ -7,7 +7,7 @@ interface Account {
   account_id: string;
   name: string;
   roleArn: string;
-  description: string ;
+  description: string;
   status: string;
   lastAccess: string;
 }
@@ -17,19 +17,19 @@ const Accounts: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [newAccount, setNewAccount] = useState<{
     accountId: string;
     accountName: string;
     roleArn: string;
-    description?: string; // Añadido campo de descripción
+    description?: string;
   }>({
     accountId: '',
     accountName: '',
     roleArn: '',
-    description: '', // Inicializado como vacío
+    description: '',
   });
 
-  // Cargar cuentas al montar
   useEffect(() => {
     fetchAccounts();
   }, []);
@@ -42,13 +42,15 @@ const Accounts: React.FC = () => {
       if (res.success && res.data) {
         setAccounts(
           res.data.map((acc: any) => ({
-            id: acc.id! ,
+            id: acc.id!,
             account_id: acc.account_id!,
             name: acc.account_name || acc.name,
-            roleArn: acc.role_arn.split('/').pop() || acc.role_arn, // Extraer solo el nombre del rol,
-            description: acc.description || null,
+            roleArn: acc.role_arn.split('/').pop() || acc.role_arn,
+            description: acc.description || '',
             status: acc.is_active ? 'Activa' : 'Inactiva',
-            lastAccess: acc.last_assumed_at ? new Date(acc.last_assumed_at).toLocaleString() : 'Nunca',
+            lastAccess: acc.last_assumed_at
+              ? new Date(acc.last_assumed_at).toLocaleString()
+              : 'Nunca',
           }))
         );
       } else {
@@ -61,7 +63,7 @@ const Accounts: React.FC = () => {
     }
   };
 
-  const handleAddAccount = async () => {
+  const handleAddOrUpdateAccount = async () => {
     if (!newAccount.accountId || !newAccount.accountName || !newAccount.roleArn) {
       alert('Por favor completa todos los campos requeridos');
       return;
@@ -70,51 +72,40 @@ const Accounts: React.FC = () => {
       const payload: any = {
         accountId: newAccount.accountId,
         accountName: newAccount.accountName,
-        roleArn: `arn:aws:iam::${newAccount.accountId}:role/${newAccount.roleArn}`, // concatenar ARN completo
-        description: newAccount.description, // Añadido al payload
+        roleArn: `arn:aws:iam::${newAccount.accountId}:role/${newAccount.roleArn}`,
+        description: newAccount.description,
       };
-  
-      const response = await apiService.addAWSAccount(payload);
+
+      let response;
+      if (editingAccount) {
+        response = await apiService.updateAWSAccount(editingAccount.id, payload);
+      } else {
+        response = await apiService.addAWSAccount(payload);
+      }
+
       if (response.success) {
-        setNewAccount({ accountId: '', accountName: '', roleArn: '', description: '' }); // Inicializado como vacío
+        setNewAccount({ accountId: '', accountName: '', roleArn: '', description: '' });
+        setEditingAccount(null);
+        setShowForm(false);
         await fetchAccounts();
       } else {
-        setError(response.error || 'Error al añadir cuenta');
+        setError(response.error || 'Error al guardar la cuenta');
       }
     } catch (error) {
-      console.error("Error al agregar la cuenta:", error);
-      setError('Error al agregar la cuenta');
+      console.error("Error al guardar la cuenta:", error);
+      setError('Error al guardar la cuenta');
     }
   };
-  
 
-  const handleSaveAccount = async (accountId: string) => {
-    if (!newAccount.accountId || !newAccount.accountName || !newAccount.roleArn) {
-      alert('Por favor completa todos los campos requeridos');
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const payload: any = {
-        accountId: newAccount.accountId,
-        accountName: newAccount.accountName,
-        roleArn: `arn:aws:iam::${newAccount.accountId}:role/${newAccount.roleArn}`, // concatenar ARN completo
-        description: newAccount.description, // Añadido al payload
-      };
-      const res = await apiService.addAWSAccount(payload);
-      if (res.success) {
-        setNewAccount({ accountId: '', accountName: '', roleArn: '', description: '' });
-        await fetchAccounts();
-      } else {
-        setError(res.error || 'Error al agregar cuenta'); // Cambiado para reflejar que se está agregando
-      }
-    } catch (err) {
-      console.error("Error al agregar la cuenta:", err);
-      setError('Error 500: Ocurrió un error interno al procesar la solicitud.'); // Mensaje de error más específico
-    } finally {
-      setLoading(false);
-    }
+  const handleEditAccount = (account: Account) => {
+    setEditingAccount(account);
+    setNewAccount({
+      accountId: account.account_id,
+      accountName: account.name,
+      roleArn: account.roleArn,
+      description: account.description,
+    });
+    setShowForm(true);
   };
 
   const handleDeleteAccount = async (id: string) => {
@@ -142,9 +133,13 @@ const Accounts: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Cuentas AWS</h1>
           <p className="text-gray-600">Gestiona tus cuentas de AWS y configuraciones</p>
         </div>
-        <button 
+        <button
           className="btn-primary flex items-center space-x-2"
-          onClick={() => setShowForm(true)} // Cambiado para mostrar el formulario al hacer clic
+          onClick={() => {
+            setShowForm(true);
+            setEditingAccount(null);
+            setNewAccount({ accountId: '', accountName: '', roleArn: '', description: '' });
+          }}
         >
           <Plus className="h-4 w-4" />
           <span>Agregar Cuenta</span>
@@ -154,7 +149,9 @@ const Accounts: React.FC = () => {
       {showForm && (
         <div className="card bg-white rounded-lg shadow-md">
           <div className="card-header bg-gray-50 px-6 py-4 border-b border-gray-200 rounded-t-lg">
-            <h3 className="card-title text-lg font-semibold text-gray-900">Nueva Cuenta</h3>
+            <h3 className="card-title text-lg font-semibold text-gray-900">
+              {editingAccount ? 'Editar Cuenta' : 'Nueva Cuenta'}
+            </h3>
           </div>
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -166,6 +163,7 @@ const Accounts: React.FC = () => {
                   onChange={(e) => setNewAccount({ ...newAccount, accountId: e.target.value })}
                   className="input-field w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="123456789012"
+                  disabled={!!editingAccount}
                 />
               </div>
               <div className="space-y-2">
@@ -200,16 +198,20 @@ const Accounts: React.FC = () => {
               </div>
             </div>
             <div className="flex justify-end space-x-3">
-              <button 
+              <button
                 className="btn-secondary flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingAccount(null);
+                  setNewAccount({ accountId: '', accountName: '', roleArn: '', description: '' });
+                }}
               >
                 <X className="h-4 w-4" />
                 <span>Cancelar</span>
               </button>
-              <button 
+              <button
                 className="btn-primary flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onClick={() => handleSaveAccount(newAccount.accountId)} // Pasar el ID de la cuenta
+                onClick={handleAddOrUpdateAccount}
                 disabled={loading}
               >
                 <Save className="h-4 w-4" />
@@ -252,20 +254,37 @@ const Accounts: React.FC = () => {
                     <td>{account.account_id}</td>
                     <td>{account.name}</td>
                     <td>{account.roleArn}</td>
-                    <td><span className={`badge ${account.status === 'Activa' ? 'badge-success' : 'badge-warning'}`}>{account.status}</span></td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          account.status === 'Activa' ? 'badge-success' : 'badge-warning'
+                        }`}
+                      >
+                        {account.status}
+                      </span>
+                    </td>
                     <td>{account.lastAccess}</td>
                     <td>
                       <div className="flex space-x-2">
-                        <div className="p-1 text-primary-600 hover:text-primary-700" onClick={() => alert(`Detalles de ${account.name}:\nDescripción: ${account.description}\nAñadido: ${new Date(account.lastAccess).toLocaleDateString()}\nEstado: ${account.status}`)}>
+                        <div
+                          className="p-1 text-primary-600 hover:text-primary-700"
+                          onClick={() =>
+                            alert(
+                              `Detalles de ${account.name}:\nDescripción: ${account.description}\nAñadido: ${new Date(
+                                account.lastAccess
+                              ).toLocaleDateString()}\nEstado: ${account.status}`
+                            )
+                          }
+                        >
                           <Eye className="h-4 w-4" />
                         </div>
-                        <button 
+                        <button
                           className="p-1 text-gray-600 hover:text-gray-700"
-                          onClick={() => alert(`Configurar ${account.name}`)}
+                          onClick={() => handleEditAccount(account)}
                         >
                           <Settings className="h-4 w-4" />
                         </button>
-                        <button 
+                        <button
                           className="p-1 text-error-600 hover:text-error-700"
                           onClick={() => handleDeleteAccount(account.id)}
                           disabled={loading}

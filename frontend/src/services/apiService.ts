@@ -115,9 +115,9 @@ export const apiService = {
   async getAWSAccounts(): Promise<ApiResponse<any[]>> {
     try {
       const response = await apiClient.get('/api/aws/accounts');
-      return response.data; // Deja que el interceptor maneje errores.
+      return response.data;
     } catch (error) {
-      throw error; // Propaga el error para manejarlo en el componente.
+      throw error;
     }
   },
 
@@ -126,20 +126,27 @@ export const apiService = {
     accountName: string;
     roleArn: string;
     description: string;
+    is_active?: boolean;
   }): Promise<ApiResponse> {
     const response = await apiClient.post('/api/aws/accounts', accountData);
     return response.data;
   },
 
-  async deleteAWSAccount(accountId: string): Promise<ApiResponse> {
-    const response = await apiClient.delete(`/api/aws/accounts/${accountId}`);
+  async updateAWSAccount(
+    accountId: string,
+    accountData: Partial<{
+      accountName: string;
+      roleArn: string;
+      description: string;
+      is_active: boolean;
+    }>
+  ): Promise<ApiResponse> {
+    const response = await apiClient.put(`/api/aws/accounts/${accountId}`, accountData);
     return response.data;
   },
 
-  async assumeRole(accountId: string, mfaCode?: string): Promise<ApiResponse> {
-    const response = await apiClient.post(`/api/aws/accounts/${accountId}/assume-role`, {
-      mfaCode,
-    });
+  async deleteAWSAccount(accountId: string): Promise<ApiResponse> {
+    const response = await apiClient.delete(`/api/aws/accounts/${accountId}`);
     return response.data;
   },
 

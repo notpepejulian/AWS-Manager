@@ -125,12 +125,12 @@ const Dashboard: React.FC<DashboardProps> = ({ socket, selectedAccount }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="bg-gray-100 p-6 rounded-lg shadow-lg space-y-6 backdrop-blur-md">
       {/* Header del Dashboard */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-700">
             {selectedAccount 
               ? `Vista general de la cuenta seleccionada` 
               : 'Selecciona una cuenta AWS para ver los datos'
@@ -148,13 +148,13 @@ const Dashboard: React.FC<DashboardProps> = ({ socket, selectedAccount }) => {
       {/* Estadísticas principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
-          <div key={stat.name} className="card">
+          <div key={stat.name} className="bg-white rounded-lg shadow-md p-4 backdrop-blur-md">
             <div className="flex items-center">
               <div className={`p-2 rounded-lg ${stat.bgColor}`}>
                 <stat.icon className={`h-6 w-6 ${stat.color}`} />
               </div>
               <div className="ml-4 flex-1">
-                <p className="text-sm font-medium text-gray-600">{stat.name}</p>
+                <p className="text-sm font-medium text-gray-700">{stat.name}</p>
                 <div className="flex items-baseline">
                   <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
                   <span className={`ml-2 text-sm font-medium ${
@@ -174,10 +174,10 @@ const Dashboard: React.FC<DashboardProps> = ({ socket, selectedAccount }) => {
       {/* Gráficos y métricas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gráfico de uso de CPU */}
-        <div className="card">
+        <div className="bg-white rounded-lg shadow-md p-4 backdrop-blur-md">
           <div className="card-header">
-            <h3 className="card-title">Uso de CPU - Últimas 24 horas</h3>
-            <p className="card-subtitle">Promedio de utilización de CPU por instancia</p>
+            <h3 className="card-title text-lg font-semibold">Uso de CPU - Últimas 24 horas</h3>
+            <p className="card-subtitle text-gray-500">Promedio de utilización de CPU por instancia</p>
           </div>
           <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
             <div className="text-center">
@@ -189,10 +189,10 @@ const Dashboard: React.FC<DashboardProps> = ({ socket, selectedAccount }) => {
         </div>
 
         {/* Gráfico de costos */}
-        <div className="card">
+        <div className="bg-white rounded-lg shadow-md p-4 backdrop-blur-md">
           <div className="card-header">
-            <h3 className="card-title">Costos AWS - Este mes</h3>
-            <p className="card-subtitle">Desglose de costos por servicio</p>
+            <h3 className="card-title text-lg font-semibold">Costos AWS - Este mes</h3>
+            <p className="card-subtitle text-gray-500">Desglose de costos por servicio</p>
           </div>
           <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
             <div className="text-center">
@@ -205,10 +205,10 @@ const Dashboard: React.FC<DashboardProps> = ({ socket, selectedAccount }) => {
       </div>
 
       {/* Actividad reciente */}
-      <div className="card">
+      <div className="bg-white rounded-lg shadow-md p-4 backdrop-blur-md">
         <div className="card-header">
-          <h3 className="card-title">Actividad Reciente</h3>
-          <p className="card-subtitle">Últimas acciones y eventos en tus cuentas AWS</p>
+          <h3 className="card-title text-lg font-semibold">Actividad Reciente</h3>
+          <p className="card-subtitle text-gray-500">Últimas acciones y eventos en tus cuentas AWS</p>
         </div>
         <div className="space-y-4">
           {recentActivities.map((activity) => (
@@ -236,9 +236,9 @@ const Dashboard: React.FC<DashboardProps> = ({ socket, selectedAccount }) => {
 
       {/* Estado de servicios */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card">
+        <div className="bg-white rounded-lg shadow-md p-4 backdrop-blur-md">
           <div className="card-header">
-            <h3 className="card-title">Estado de Servicios</h3>
+            <h3 className="card-title text-lg font-semibold">Estado de Servicios</h3>
           </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -260,9 +260,9 @@ const Dashboard: React.FC<DashboardProps> = ({ socket, selectedAccount }) => {
           </div>
         </div>
 
-        <div className="card">
+        <div className="bg-white rounded-lg shadow-md p-4 backdrop-blur-md">
           <div className="card-header">
-            <h3 className="card-title">Alertas</h3>
+            <h3 className="card-title text-lg font-semibold">Alertas</h3>
           </div>
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
@@ -280,9 +280,9 @@ const Dashboard: React.FC<DashboardProps> = ({ socket, selectedAccount }) => {
           </div>
         </div>
 
-        <div className="card">
+        <div className="bg-white rounded-lg shadow-md p-4 backdrop-blur-md">
           <div className="card-header">
-            <h3 className="card-title">Próximas Acciones</h3>
+            <h3 className="card-title text-lg font-semibold">Próximas Acciones</h3>
           </div>
           <div className="space-y-3">
             <div className="text-sm">
@@ -303,10 +303,10 @@ const Dashboard: React.FC<DashboardProps> = ({ socket, selectedAccount }) => {
 
       {/* Datos en tiempo real */}
       {realTimeData && (
-        <div className="card">
+        <div className="bg-white rounded-lg shadow-md p-4 backdrop-blur-md">
           <div className="card-header">
-            <h3 className="card-title">Datos en Tiempo Real</h3>
-            <p className="card-subtitle">Actualizaciones en vivo desde WebSocket</p>
+            <h3 className="card-title text-lg font-semibold">Datos en Tiempo Real</h3>
+            <p className="card-subtitle text-gray-500">Actualizaciones en vivo desde WebSocket</p>
           </div>
           <pre className="bg-gray-50 p-4 rounded-lg text-sm overflow-auto">
             {JSON.stringify(realTimeData, null, 2)}
