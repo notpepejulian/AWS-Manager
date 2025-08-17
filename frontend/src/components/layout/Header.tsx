@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; 
 import { 
   Bell, 
   Search, 
@@ -9,6 +9,9 @@ import {
   Cloud,
   Activity
 } from 'lucide-react';
+import { useAuth } from '../../store/authStore';
+import { useNavigate } from 'react-router-dom';
+import { apiService } from '../../services/apiService';
 
 interface HeaderProps {
   backendStatus: {
@@ -28,21 +31,60 @@ interface HeaderProps {
   onAccountChange: (accountId: string | null) => void;
 }
 
+interface Account {
+  id: string;
+  account_id: string;
+  name: string;
+  roleArn: string;
+  description: string | null;
+  status: string;
+  lastAccess: string;
+}
+
 const Header: React.FC<HeaderProps> = ({ 
   backendStatus, 
   isConnected, 
   selectedAccount, 
   onAccountChange 
 }) => {
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const { logout, userName } = useAuth(); 
+  const navigate = useNavigate();
 
-  // Datos de ejemplo para las cuentas AWS
-  const awsAccounts = [
-    { id: '1', accountId: '123456789012', name: 'Producción', region: 'us-east-1' },
-    { id: '2', accountId: '987654321098', name: 'Desarrollo', region: 'us-west-2' },
-    { id: '3', accountId: '555666777888', name: 'Testing', region: 'eu-west-1' },
-  ];
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await apiService.getAWSAccounts();
+        if (res.success && res.data) {
+          setAccounts(
+            res.data.map((acc: any) => ({
+              id: acc.id!,
+              account_id: acc.account_id!,
+              name: acc.account_name || acc.name,
+              roleArn: acc.role_arn.split('/').pop() || acc.role_arn,
+              description: acc.description || null,
+              status: acc.is_active ? 'Activa' : 'Inactiva',
+              lastAccess: acc.last_assumed_at ? new Date(acc.last_assumed_at).toLocaleString() : 'Nunca',
+            }))
+          );
+        } else {
+          setAccounts([]);
+        }
+      } catch (err) {
+        setError('Error al cargar cuentas');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAccounts();
+  }, []);
 
   const formatUptime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
@@ -92,9 +134,9 @@ const Header: React.FC<HeaderProps> = ({
                 className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 leading-tight focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="">Seleccionar cuenta</option>
-                {awsAccounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name} ({account.accountId})
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.account_id}>
+                    {account.name} ({account.account_id})
                   </option>
                 ))}
               </select>
@@ -161,23 +203,42 @@ const Header: React.FC<HeaderProps> = ({
                 className="flex items-center space-x-2 p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-lg"
               >
                 <User className="h-6 w-6" />
-                <span className="text-sm font-medium text-gray-700">Admin</span>
+                <span className="text-sm font-medium text-gray-700">{userName || 'Usuario'}</span>
                 <ChevronDown className="h-4 w-4" />
               </button>
 
               {showUserMenu && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-aws border border-gray-200 z-50">
                   <div className="py-1">
-                    <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate('/profile');
+                      }}
+                    >
                       <User className="h-4 w-4 mr-2" />
                       Perfil
                     </button>
-                    <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate('/settings');
+                      }}
+                    >
                       <Settings className="h-4 w-4 mr-2" />
                       Configuración
                     </button>
                     <hr className="my-1" />
-                    <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        logout();
+                        navigate('/login');
+                      }}
+                    >
                       <LogOut className="h-4 w-4 mr-2" />
                       Cerrar sesión
                     </button>

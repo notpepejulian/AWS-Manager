@@ -127,7 +127,6 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password }: LoginRequest = req.body;
 
-    // Validaciones básicas
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -135,9 +134,8 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Buscar usuario
     const result = await query(
-      'SELECT id, name, email, password_hash, created_at FROM users WHERE email = $1',
+      'SELECT id, name, email, password, created_at FROM users WHERE email = $1',
       [email]
     );
 
@@ -150,8 +148,8 @@ router.post('/login', async (req, res) => {
 
     const user = result.rows[0];
 
-    // Verificar contraseña
-    const isValidPassword = await comparePassword(password, user.password_hash);
+    // FIX: usar user.password en lugar de user.password_hash
+    const isValidPassword = await comparePassword(password, user.password);
 
     if (!isValidPassword) {
       return res.status(401).json({
@@ -160,7 +158,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Generar token
     const token = generateToken({
       userId: user.id,
       email: user.email,
@@ -189,6 +186,7 @@ router.post('/login', async (req, res) => {
     });
   }
 });
+
 
 // GET /api/auth/me
 router.get('/me', async (req, res) => {

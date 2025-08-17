@@ -22,8 +22,8 @@ export const authenticateToken = (
   res: Response,
   next: NextFunction
 ): void => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+  const token = authHeader && (authHeader as string).split(' ')[1]; // Bearer TOKEN
 
   if (!token) {
     res.status(401).json({
@@ -34,7 +34,11 @@ export const authenticateToken = (
   }
 
   try {
-    const secret = process.env.JWT_SECRET || 'your-secret-key';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET no está configurado');
+    }
+    
     const decoded = jwt.verify(token, secret) as {
       userId: string;
       email: string;
@@ -43,12 +47,11 @@ export const authenticateToken = (
 
     req.user = decoded;
     next();
-    return;
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
       res.status(403).json({
         success: false,
-        error: 'Token inválido'
+        error: 'Token inválido o expirado'
       });
       return;
     }
@@ -63,9 +66,8 @@ export const authenticateToken = (
 
     res.status(500).json({
       success: false,
-      error: 'Error al verificar token'
+      error: 'Error interno del servidor al verificar token'
     });
-    return;
   }
 };
 
@@ -78,16 +80,20 @@ export const optionalAuth = (
   res: Response,
   next: NextFunction
 ): void => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+  const token = authHeader && (authHeader as string).split(' ')[1];
 
   if (!token) {
-    next(); // Continuar sin autenticación
+    next();
     return;
   }
 
   try {
-    const secret = process.env.JWT_SECRET || 'your-secret-key';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET no está configurado');
+    }
+    
     const decoded = jwt.verify(token, secret) as {
       userId: string;
       email: string;
@@ -96,11 +102,9 @@ export const optionalAuth = (
 
     req.user = decoded;
     next();
-    return;
   } catch (error) {
     // Si hay error con el token, continuar sin autenticación
     next();
-    return;
   }
 };
 
@@ -119,9 +123,7 @@ export const requireRole = (roles: string[]) => {
     }
 
     // TODO: Implementar verificación de roles cuando se agregue la tabla de roles
-    // Por ahora, permitimos acceso a todos los usuarios autenticados
     next();
-    return;
   };
 };
 

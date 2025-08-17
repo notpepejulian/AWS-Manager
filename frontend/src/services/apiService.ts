@@ -35,6 +35,8 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
       window.location.href = '/login';
+    } else if (error.response?.status === 400) {
+      console.error('Error en la solicitud:', error.response.data);
     }
     return Promise.reject(error);
   }
@@ -88,8 +90,13 @@ export const apiService = {
   // ========================================
 
   async login(email: string, password: string): Promise<ApiResponse<{ token: string; user: any }>> {
-    const response = await apiClient.post('/api/auth/login', { email, password });
-    return response.data;
+    try {
+      const response = await apiClient.post('/api/auth/login', { email, password });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error en el inicio de sesión:', error.response?.data);
+      throw error; // Re-lanzar el error para que pueda ser manejado en el componente
+    }
   },
 
   async register(userData: { email: string; password: string; name: string }): Promise<ApiResponse> {
@@ -106,17 +113,35 @@ export const apiService = {
   // ========================================
 
   async getAWSAccounts(): Promise<ApiResponse<any[]>> {
-    const response = await apiClient.get('/api/aws/accounts');
-    return response.data;
+    try {
+      const response = await apiClient.get('/api/aws/accounts');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
   async addAWSAccount(accountData: {
     accountId: string;
     accountName: string;
     roleArn: string;
-    region: string;
+    description: string;
+    is_active?: boolean;
   }): Promise<ApiResponse> {
     const response = await apiClient.post('/api/aws/accounts', accountData);
+    return response.data;
+  },
+
+  async updateAWSAccount(
+    accountId: string,
+    accountData: Partial<{
+      accountName: string;
+      roleArn: string;
+      description: string;
+      is_active: boolean;
+    }>
+  ): Promise<ApiResponse> {
+    const response = await apiClient.put(`/api/aws/accounts/${accountId}`, accountData);
     return response.data;
   },
 
@@ -125,38 +150,27 @@ export const apiService = {
     return response.data;
   },
 
-  async assumeRole(accountId: string, mfaCode?: string): Promise<ApiResponse> {
-    const response = await apiClient.post(`/api/aws/accounts/${accountId}/assume-role`, {
-      mfaCode,
-    });
-    return response.data;
-  },
-
   // ========================================
   // RECURSOS AWS
   // ========================================
 
-  async getEC2Instances(accountId: string, region?: string): Promise<ApiResponse<any[]>> {
-    const params = region ? { region } : {};
-    const response = await apiClient.get(`/api/aws/accounts/${accountId}/ec2/instances`, { params });
+  async getEC2Instances(accountId: string): Promise<ApiResponse<any[]>> {
+    const response = await apiClient.get(`/api/aws/accounts/${accountId}/ec2/instances`);
     return response.data;
   },
 
-  async getLoadBalancers(accountId: string, region?: string): Promise<ApiResponse<any[]>> {
-    const params = region ? { region } : {};
-    const response = await apiClient.get(`/api/aws/accounts/${accountId}/elb/load-balancers`, { params });
+  async getLoadBalancers(accountId: string): Promise<ApiResponse<any[]>> {
+    const response = await apiClient.get(`/api/aws/accounts/${accountId}/elb/load-balancers`);
     return response.data;
   },
 
-  async getVPCs(accountId: string, region?: string): Promise<ApiResponse<any[]>> {
-    const params = region ? { region } : {};
-    const response = await apiClient.get(`/api/aws/accounts/${accountId}/ec2/vpcs`, { params });
+  async getVPCs(accountId: string): Promise<ApiResponse<any[]>> {
+    const response = await apiClient.get(`/api/aws/accounts/${accountId}/ec2/vpcs`);
     return response.data;
   },
 
-  async getCompleteInventory(accountId: string, region?: string): Promise<ApiResponse<any>> {
-    const params = region ? { region } : {};
-    const response = await apiClient.get(`/api/aws/accounts/${accountId}/inventory`, { params });
+  async getCompleteInventory(accountId: string): Promise<ApiResponse<any>> {
+    const response = await apiClient.get(`/api/aws/accounts/${accountId}/inventory`);
     return response.data;
   },
 

@@ -21,6 +21,7 @@ const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const navigate = useNavigate();
   const { login, register, isLoading, error, clearError } = useAuth();
 
@@ -45,7 +46,11 @@ const Login: React.FC = () => {
   // Limpiar error cuando cambia el modo
   React.useEffect(() => {
     clearError();
-  }, [isLogin, clearError]);
+    if (registrationSuccess) {
+      setIsLogin(true);
+      setRegistrationSuccess(false);
+    }
+  }, [isLogin, clearError, registrationSuccess]);
 
   // Mostrar error como toast
   React.useEffect(() => {
@@ -55,10 +60,14 @@ const Login: React.FC = () => {
   }, [error]);
 
   const handleLogin = async (data: LoginFormData) => {
-    const success = await login(data.email, data.password);
-    if (success) {
-      toast.success('¡Bienvenido!');
-      navigate('/dashboard');
+    try {
+      const success = await login(data.email, data.password);
+      if (success) {
+        toast.success('¡Bienvenido!');
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      toast.error('Error al iniciar sesión. Verifica tus credenciales.');
     }
   };
 
@@ -68,10 +77,16 @@ const Login: React.FC = () => {
       return;
     }
 
-    const success = await register(data.name, data.email, data.password);
-    if (success) {
-      toast.success('¡Cuenta creada exitosamente!');
-      navigate('/dashboard');
+    try {
+      const success = await register(data.name, data.email, data.password);
+      if (success) {
+        toast.success('¡Cuenta creada exitosamente!');
+        setRegistrationSuccess(true);
+        // Limpiar formulario de registro
+        registerForm.reset();
+      }
+    } catch (err) {
+      toast.error('Error al crear la cuenta. Inténtalo de nuevo.');
     }
   };
 
