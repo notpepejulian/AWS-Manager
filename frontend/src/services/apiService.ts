@@ -23,9 +23,7 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Interceptor para manejar errores
@@ -67,6 +65,19 @@ export interface ApiResponse<T = any> {
 }
 
 // ========================================
+// TIPOS DE GOBERNANCE
+// ========================================
+
+export interface GobernanceAccount {
+  account_id: string;
+  iam_user: string;
+  password: string;
+  aws_access_key_id: string;
+  aws_secret_access_key: string;
+  description?: string;
+}
+
+// ========================================
 // SERVICIO PRINCIPAL DE API
 // ========================================
 
@@ -95,7 +106,7 @@ export const apiService = {
       return response.data;
     } catch (error: any) {
       console.error('Error en el inicio de sesión:', error.response?.data);
-      throw error; // Re-lanzar el error para que pueda ser manejado en el componente
+      throw error;
     }
   },
 
@@ -109,16 +120,54 @@ export const apiService = {
   },
 
   // ========================================
+  // GOBERNANCE ACCOUNTS
+  // ========================================
+
+  async getGovernanceAccounts(): Promise<ApiResponse<GobernanceAccount[]>> {
+    const response = await apiClient.get('/api/aws/governance');
+    return response.data;
+  },
+
+  async addGovernanceAccount(accountData: {
+    account_id: string;
+    iam_user: string;
+    password: string;
+    aws_access_key_id: string;
+    aws_secret_access_key: string;
+    description?: string;
+  }): Promise<ApiResponse> {
+    const response = await apiClient.post('/api/aws/governance', accountData);
+    return response.data;
+  },
+
+  async updateGovernanceAccount(
+      id: string,
+      accountData:
+    Partial<{
+      account_id: string;
+      iam_user: string;
+      password: string;
+      aws_access_key_id: string;
+      aws_secret_access_key: string;
+      description: string;
+    }>
+  ): Promise<ApiResponse> {
+    const response = await apiClient.put(`/api/aws/governance/${id}`, accountData);
+    return response.data;
+  },
+
+  async deleteGovernanceAccount(id: string): Promise<ApiResponse> {
+      const response = await apiClient.delete(`/api/aws/governance/${id}`);
+      return response.data;
+  },
+
+  // ========================================
   // CUENTAS AWS
   // ========================================
 
   async getAWSAccounts(): Promise<ApiResponse<any[]>> {
-    try {
-      const response = await apiClient.get('/api/aws/accounts');
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get('/api/aws/accounts');
+    return response.data;
   },
 
   async addAWSAccount(accountData: {
@@ -145,8 +194,8 @@ export const apiService = {
     return response.data;
   },
 
-  async deleteAWSAccount(accountId: string): Promise<ApiResponse> {
-    const response = await apiClient.delete(`/api/aws/accounts/${accountId}`);
+  async deleteAWSAccount(id: string): Promise<ApiResponse> {
+    const response = await apiClient.delete(`/api/aws/accounts/${id}`);
     return response.data;
   },
 
@@ -270,10 +319,7 @@ export const apiService = {
     return response.data;
   },
 
-  async changePassword(passwordData: {
-    currentPassword: string;
-    newPassword: string;
-  }): Promise<ApiResponse> {
+  async changePassword(passwordData: { currentPassword: string; newPassword: string }): Promise<ApiResponse> {
     const response = await apiClient.put('/api/users/password', passwordData);
     return response.data;
   },
