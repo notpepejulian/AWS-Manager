@@ -185,6 +185,21 @@ export const initializeTables = async (): Promise<void> => {
       CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
     `);
 
+    await query(`
+      CREATE TABLE IF NOT EXISTS governance_account (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        account_id VARCHAR(12) NOT NULL UNIQUE,
+        iam_user VARCHAR(20) NOT NULL, 
+        password VARCHAR(255) NOT NULL, 
+        aws_access_key_id VARCHAR(100) NOT NULL,
+        aws_secret_access_key VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        description VARCHAR(255) DEFAULT 'Cuenta de gobernanza'
+      );
+    `);
+
     console.log('✅ Tablas de la base de datos inicializadas correctamente');
   } catch (error) {
     console.error('❌ Error inicializando tablas:', error);

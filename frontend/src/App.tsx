@@ -13,11 +13,11 @@ import Resources from './pages/Resources';
 import Logs from './pages/Logs';
 import SettingsPage from './pages/Settings';
 import Login from './pages/Login';
+import GovernanceSettings from './pages/GovernanceSettings';
 
 // Servicios
 import { apiService } from './services/apiService';
 import { useAuth } from './store/authStore';
-
 
 import { BarChart3, Cloud, Server, Activity, Settings, type LucideIcon } from 'lucide-react';
 
@@ -35,7 +35,6 @@ const navigation: NavigationItem[] = [
   { name: 'Logs', href: '/logs', icon: Activity },
   { name: 'Configuración', href: '/settings', icon: Settings },
 ];
-
 
 // Tipos
 interface BackendStatus {
@@ -143,8 +142,6 @@ const App: React.FC = () => {
     { name: 'Configuración', href: '/settings', icon: Settings },
   ];
   
-  
-
   // Si no está autenticado y no está en login, mostrar login
   if (!isAuthenticated && location.pathname !== '/login') {
     return <Login />;
@@ -247,6 +244,7 @@ const App: React.FC = () => {
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/governance-settings" element={<GovernanceSettings />} /> {/* Nueva ruta añadida */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -17,6 +17,15 @@ interface CreateAccountRequest {
   description?: string;
 }
 
+interface CreateGovernanceAccountRequest {
+  accountId: string;
+  iamUser: string;
+  password: string;
+  awsAccessKeyId: string;
+  awsSecretAccessKey: string;
+  description?: string;
+}
+
 interface AssumeRoleRequest {
   mfaCode?: string;
 }
@@ -42,6 +51,10 @@ router.get('/accounts', authenticateToken, async (req: AuthenticatedRequest, res
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
+
+// ========================================
+// ACCOUNTS
+// ========================================
 
 // POST /api/aws/accounts
 router.post('/accounts', authenticateToken, async (req: AuthenticatedRequest, res) => {
@@ -251,6 +264,179 @@ router.get('/accounts/:id/test-connection', authenticateToken, async (req: Authe
     }
   } catch (error) {
     console.error('Error probando conexión:', error);
+    return res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// ========================================
+// GOBERNANZA
+// ========================================
+
+router.get('/governance', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.userId;
+
+    const result = await query(
+      `SELECT id, account_id, iam_user, aws_access_key_id, aws_secret_access_key, created_at, updated_at, description, password
+       FROM governance_account WHERE user_id = $1 ORDER BY created_at DESC`,
+      [userId]
+    );
+
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error obteniendo cuentas de gobernanza:', error);
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// POST /api/aws/governance
+router.post('/governance', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.userId;
+    const { accountId, iamUser, awsAccessKeyId, awsSecretAccessKey, description, password }: CreateGovernanceAccountRequest = req.body;
+
+    if (!accountId || !iamUser || !awsAccessKeyId || !awsSecretAccessKey || !password) {
+      return res.status(400).json({ success: false, error: 'Todos los campos requeridos deben estar presentes' });
+    }
+
+    const existingAccount = await query(
+      'SELECT id FROM governance_account WHERE user_id = $1 AND account_id = $2',
+      [userId, accountId]
+    );
+
+    if (existingAccount.rows.length > 0) {
+      return res.status(409).json({ success: false, error: 'Esta cuenta de gobernanza ya está registrada' });
+    }
+
+    const result = await query(
+      `INSERT INTO governance_account 
+        (user_id, account_id, iam_user, aws_access_key_id, aws_secret_access_key, description, password) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+       RETURNING id, account_id, iam_user, aws_access_key_id, aws_secret_access_key, created_at`,
+      [userId, accountId, iamUser, awsAccessKeyId, awsSecretAccessKey, description || null, password]
+    );
+
+    return res.status(201).json({ success: true, message: 'Cuenta de gobernanza creada exitosamente', data: result.rows[0] });
+  } catch (error) {
+    console.error('Error creando cuenta de gobernanza:', error);
+    return res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// POST /api/aws/governance/accounts/:id
+router.post('/governance/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.userId;
+    const accountId = req.params.id;
+    const { iamUser, awsAccessKeyId, awsSecretAccessKey, description, password }: CreateGovernanceAccountRequest = req.body;
+
+    if (!iamUser || !awsAccessKeyId || !awsSecretAccessKey || !password) {
+      return res.status(400).json({ success: false, error: 'Todos los campos requeridos deben estar presentes' });
+    }
+
+    const existingAccount = await query(
+      'SELECT id FROM governance_account WHERE user_id = $1 AND account_id = $2',
+      [userId, accountId]
+    );
+
+    if (existingAccount.rows.length > 0) {
+      return res.status(409).json({ success: false, error: 'Esta cuenta de gobernanza ya está registrada' });
+    }
+
+    const result = await query(
+      `INSERT INTO governance_account 
+        (user_id, account_id, iam_user, aws_access_key_id, aws_secret_access_key, description, password) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+       RETURNING id, account_id, iam_user, aws_access_key_id, aws_secret_access_key, created_at`,
+      [userId, accountId, iamUser, awsAccessKeyId, awsSecretAccessKey, description || null, password]
+    );
+
+    return res.status(201).json({ success: true, message: 'Cuenta de gobernanza creada exitosamente', data: result.rows[0] });
+  } catch (error) {
+    console.error('Error creando cuenta de gobernanza:', error);
+    return res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// GET /api/governance/accounts/:id
+router.get('/governance/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.userId;
+    const accountId = req.params.id;
+
+    const result = await query(
+      `SELECT id, account_id, iam_user, aws_access_key_id, aws_secret_access_key, description, password, created_at, updated_at
+       FROM governance_account WHERE id = $1 AND user_id = $2`,
+      [accountId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Cuenta de gobernanza no encontrada' });
+    }
+
+    return res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('Error obteniendo cuenta de gobernanza:', error);
+    return res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// PUT /api/governance/accounts/:id
+router.put('/governance/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.userId;
+    const accountId = req.params.id;
+    const { iamUser, awsAccessKeyId, awsSecretAccessKey, description, password }: CreateGovernanceAccountRequest = req.body;
+
+    const existingAccount = await query(
+      'SELECT id FROM governance_account WHERE id = $1 AND user_id = $2',
+      [accountId, userId]
+    );
+
+    if (existingAccount.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Cuenta de gobernanza no encontrada' });
+    }
+
+    const result = await query(
+      `UPDATE governance_account
+       SET iam_user = COALESCE($1, iam_user),
+           aws_access_key_id = COALESCE($2, aws_access_key_id),
+           aws_secret_access_key = COALESCE($3, aws_secret_access_key),
+           description = COALESCE($4, description),
+           password = COALESCE($5, password),
+           updated_at = NOW()
+       WHERE id = $6 AND user_id = $7
+       RETURNING id, account_id, iam_user, aws_access_key_id, aws_secret_access_key, description, password, updated_at`,
+      [iamUser, awsAccessKeyId, awsSecretAccessKey, description, password, accountId, userId]
+    );
+
+    return res.json({ success: true, message: 'Cuenta de gobernanza actualizada exitosamente', data: result.rows[0] });
+  } catch (error) {
+    console.error('Error actualizando cuenta de gobernanza:', error);
+    return res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// DELETE /api/aws/governance/:id
+router.delete('/governance/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.userId;
+    const accountId = req.params.id;
+
+    const existingAccount = await query(
+      'SELECT id FROM governance_account WHERE id = $1 AND user_id = $2',
+      [accountId, userId]
+    );
+
+    if (existingAccount.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Cuenta de gobernanza no encontrada' });
+    }
+
+    await query('DELETE FROM governance_account WHERE id = $1 AND user_id = $2', [accountId, userId]);
+
+    return res.json({ success: true, message: 'Cuenta de gobernanza eliminada exitosamente' });
+  } catch (error) {
+    console.error('Error eliminando cuenta de gobernanza:', error);
     return res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
