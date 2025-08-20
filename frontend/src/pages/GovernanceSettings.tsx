@@ -3,12 +3,12 @@ import { Settings, Trash2 } from 'lucide-react';
 
 interface Settings {
   id: string;
-  accountId: string;          // mapea a account_id
-  iamUser: string;            // mapea a iam_user
+  accountId: string;
+  iamUser: string;
   password: string;
-  awsAccessKeyId: string;     // mapea a aws_access_key_id
-  awsSecretAccessKey: string; // mapea a aws_secret_access_key
-  description?: string;       // opcional
+  awsAccessKeyId: string;
+  awsSecretAccessKey: string;
+  description?: string;
 }
 
 const GovernanceSettings: React.FC = () => {
@@ -21,7 +21,7 @@ const GovernanceSettings: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [settingsList, setSettingsList] = useState<Settings[]>([]);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -30,11 +30,12 @@ const GovernanceSettings: React.FC = () => {
         const res = await fetch('http://localhost:4000/api/aws/governance', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
-        if (data && Array.isArray(data)) {
+        const response = await res.json();
+        
+        if (response.success && Array.isArray(response.data)) {
           setSettingsList(
-            data.map((account: any) => ({
-              id: account.id || '', // Definir id con un valor por defecto
+            response.data.map((account: any) => ({
+              id: account.id,
               accountId: account.account_id,
               iamUser: account.iam_user,
               password: account.password,
@@ -62,21 +63,20 @@ const GovernanceSettings: React.FC = () => {
     setError('');
     setLoading(true);
 
-    const payload: any = {
+    const payload = {
       accountId,
       iamUser,
       password,
       awsAccessKeyId,
       awsSecretAccessKey,
+      description: description || "Cuenta Cloud de gobernanza"
     };
-    if (description) payload.description = description;
 
     try {
       const token = localStorage.getItem('authToken');
 
-      if (editingIndex !== null) {
-        const account = settingsList[editingIndex];
-        await fetch(`http://localhost:4000/api/aws/governance/${account.id}`, {
+      if (editingId) {
+        const response = await fetch(`http://localhost:4000/api/aws/governance/${editingId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -85,11 +85,14 @@ const GovernanceSettings: React.FC = () => {
           body: JSON.stringify(payload),
         });
 
-        const updatedList = [...settingsList];
-        updatedList[editingIndex] = { ...payload };
-        setSettingsList(updatedList);
+        const result = await response.json();
+        if (result.success) {
+          setSettingsList(prev => prev.map(item => 
+            item.id === editingId ? { ...payload, id: editingId } : item
+          ));
+        }
       } else {
-        await fetch('http://localhost:4000/api/aws/governance', {
+        const response = await fetch('http://localhost:4000/api/aws/governance', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -98,16 +101,29 @@ const GovernanceSettings: React.FC = () => {
           body: JSON.stringify(payload),
         });
 
-        setSettingsList([...settingsList, payload]);
+        const result = await response.json();
+        if (result.success && result.data) {
+          setSettingsList(prev => [...prev, {
+            id: result.data.id,
+            accountId: result.data.account_id,
+            iamUser: result.data.iam_user,
+            password: result.data.password,
+            awsAccessKeyId: result.data.aws_access_key_id,
+            awsSecretAccessKey: result.data.aws_secret_access_key,
+            description: result.data.description
+          }]);
+        }
       }
 
+      // Limpiar formulario
       setAccountId('');
       setIamUser('');
       setPassword('');
       setAwsAccessKeyId('');
       setAwsSecretAccessKey('');
       setDescription('');
-      setEditingIndex(null);
+      setEditingId(null);
+      
     } catch (err) {
       setError('Error al guardar en la base de datos');
     } finally {
@@ -115,28 +131,33 @@ const GovernanceSettings: React.FC = () => {
     }
   };
 
-  const handleEdit = (index: number) => {
-    const s = settingsList[index];
-    setAccountId(s.accountId);
-    setIamUser(s.iamUser);
-    setPassword(s.password);
-    setAwsAccessKeyId(s.awsAccessKeyId);
-    setAwsSecretAccessKey(s.awsSecretAccessKey);
-    setDescription(s.description || '');
-    setEditingIndex(index);
+  const handleEdit = (id: string) => {
+    const setting = settingsList.find(s => s.id === id);
+    if (setting) {
+      setAccountId(setting.accountId);
+      setIamUser(setting.iamUser);
+      setPassword(setting.password);
+      setAwsAccessKeyId(setting.awsAccessKeyId);
+      setAwsSecretAccessKey(setting.awsSecretAccessKey);
+      setDescription(setting.description || '');
+      setEditingId(id);
+    }
   };
 
-  const handleDelete = async (index: number) => {
-    const account = settingsList[index];
-    const updated = settingsList.filter((_, i) => i !== index);
-    setSettingsList(updated);
-
+  const handleDelete = async (id: string) => {
     try {
       const token = localStorage.getItem('authToken');
-      await fetch(`http://localhost:4000/api/aws/governance/${account.id}`, {
+      const response = await fetch(`http://localhost:4000/api/aws/governance/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      const result = await response.json();
+      if (result.success) {
+        setSettingsList(prev => prev.filter(item => item.id !== id));
+      } else {
+        setError('Error al eliminar de la base de datos');
+      }
     } catch {
       setError('Error al eliminar de la base de datos');
     }
@@ -148,7 +169,7 @@ const GovernanceSettings: React.FC = () => {
     <div className="max-w-5xl mx-auto space-y-8">
       <h1 className="text-2xl font-bold text-gray-900">Configuración de cuenta de gobernanza</h1>
 
-      {(settingsList.length === 0 || editingIndex !== null) && (
+      {(settingsList.length === 0 || editingId !== null) && (
         <div className="card bg-white rounded-lg shadow-md p-6 space-y-6">
           <h2 className="text-lg font-semibold text-gray-800">Cuenta de gobernanza</h2>
           <div className="grid grid-cols-2 gap-6">
@@ -211,7 +232,7 @@ const GovernanceSettings: React.FC = () => {
               />
             </div>
           </div>
-
+          
           <div className="flex justify-end space-x-3 mt-6">
             <button
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
@@ -223,7 +244,7 @@ const GovernanceSettings: React.FC = () => {
                 setAwsSecretAccessKey('');
                 setDescription('');
                 setError('');
-                setEditingIndex(null);
+                setEditingId(null);
               }}
             >
               Cancelar
@@ -233,7 +254,7 @@ const GovernanceSettings: React.FC = () => {
               onClick={handleSave}
               disabled={loading}
             >
-              {loading ? 'Guardando...' : editingIndex !== null ? 'Actualizar' : 'Guardar'}
+              {loading ? 'Guardando...' : editingId ? 'Actualizar' : 'Guardar'}
             </button>
           </div>
 
@@ -257,8 +278,8 @@ const GovernanceSettings: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {settingsList.map((s, idx) => (
-                <tr key={idx} className="border-t">
+              {settingsList.map((s) => (
+                <tr key={s.id} className="border-t">
                   <td className="px-4 py-2">{s.accountId}</td>
                   <td className="px-4 py-2">{s.iamUser}</td>
                   <td className="px-4 py-2">••••••••</td>
@@ -268,13 +289,13 @@ const GovernanceSettings: React.FC = () => {
                   <td className="px-4 py-2 space-x-2">
                     <button
                       className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
-                      onClick={() => handleEdit(idx)}
+                      onClick={() => handleEdit(s.id)}
                     >
                       <Settings className="h-4 w-4" />
                     </button>
                     <button
                       className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                      onClick={() => handleDelete(idx)}
+                      onClick={() => handleDelete(s.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
